@@ -14,12 +14,17 @@ NSString *const EDQueueDidStop = @"EDQueueDidStop";
 NSString *const EDQueueJobDidSucceed = @"EDQueueJobDidSucceed";
 NSString *const EDQueueJobDidFail = @"EDQueueJobDidFail";
 NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
+NSString *const EDQueueDidBecomeStale = @"EDQueueDidBecomeStale";
+NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
 
 @interface EDQueue ()
 {
+    BOOL _isReliable;
     BOOL _isRunning;
     BOOL _isActive;
+    BOOL _isStale;
     NSUInteger _retryLimit;
+    NSUInteger _staleThreshold;
 }
 
 @property (nonatomic) EDQueueStorageEngine *engine;
@@ -31,9 +36,12 @@ NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
 
 @implementation EDQueue
 
+@synthesize isReliable = _isReliable;
 @synthesize isRunning = _isRunning;
 @synthesize isActive = _isActive;
+@synthesize isStale = _isStale;
 @synthesize retryLimit = _retryLimit;
+@synthesize staleThreshold = _staleThreshold;
 
 #pragma mark - Singleton
 
@@ -55,6 +63,8 @@ NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
     if (self) {
         _engine     = [[EDQueueStorageEngine alloc] init];
         _retryLimit = 4;
+        _isReliable = NO;
+        _staleThreshold = 300; // 5 minutes
     }
     return self;
 }
@@ -130,6 +140,7 @@ NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
 {
     if (!self.isRunning) {
         _isRunning = YES;
+        _isStale = NO;
         [self tick];
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidStart, @"name", nil, @"data", nil] waitUntilDone:false];
     }
@@ -180,6 +191,22 @@ NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
             id job = [self.engine fetchJob];
             self.activeTask = [(NSDictionary *)job objectForKey:@"task"];
             
+            long jobTimestamp = [[(NSDictionary *)job objectForKey:@"stamp"] longLongValue];
+            long currentTimestamp = [[NSDate date] timeIntervalSince1970];
+            if ((currentTimestamp - jobTimestamp) > _staleThreshold) {
+                if (!_isStale) {
+                    [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeStale, @"name", job, @"data", nil] waitUntilDone:false];
+                }
+
+                _isStale = YES;
+            } else {
+                if (_isStale) {
+                    [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeFresh, @"name", job, @"data", nil] waitUntilDone:false];
+                }
+                
+                _isStale = NO;
+            }
+            
             // Pass job to delegate
             if ([self.delegate respondsToSelector:@selector(queue:processJob:completion:)]) {
                 [self.delegate queue:self processJob:job completion:^(EDQueueResult result) {
@@ -206,7 +233,7 @@ NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
         case EDQueueResultFail:
             [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueJobDidFail, @"name", job, @"data", nil] waitUntilDone:true];
             NSUInteger currentAttempt = [[job objectForKey:@"attempts"] intValue] + 1;
-            if (currentAttempt < self.retryLimit) {
+            if (self.isReliable || currentAttempt < self.retryLimit) {
                 [self.engine incrementAttemptForJob:[job objectForKey:@"id"]];
             } else {
                 [self.engine removeJob:[job objectForKey:@"id"]];
@@ -215,7 +242,11 @@ NSString *const EDQueueDidDrain = @"EDQueueDidDrain";
         case EDQueueResultCritical:
             [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueJobDidFail, @"name", job, @"data", nil] waitUntilDone:false];
             [self errorWithMessage:@"Critical error. Job canceled."];
-            [self.engine removeJob:[job objectForKey:@"id"]];
+            if (self.isReliable) {
+                [self.engine incrementAttemptForJob:[job objectForKey:@"id"]];
+            } else {
+                [self.engine removeJob:[job objectForKey:@"id"]];
+            }
             break;
     }
     

@@ -28,6 +28,8 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+    [EDQueue sharedInstance].isReliable = YES;
+    [EDQueue sharedInstance].staleThreshold = 30;
     [[EDQueue sharedInstance] setDelegate:self];
     [[EDQueue sharedInstance] start];
 }
