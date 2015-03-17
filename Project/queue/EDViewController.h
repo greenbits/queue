@@ -12,6 +12,9 @@
 @interface EDViewController : UIViewController
 
 @property (nonatomic, retain) IBOutlet UITextView *activity;
+@property (weak, nonatomic) IBOutlet UILabel *runningLabel;
+@property (weak, nonatomic) IBOutlet UILabel *activeLabel;
+@property (weak, nonatomic) IBOutlet UILabel *staleLabel;
 
 - (IBAction)addSuccess:(id)sender;
 - (IBAction)addFail:(id)sender;

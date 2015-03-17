@@ -25,6 +25,8 @@
     [nc addObserver:self selector:@selector(receivedNotification:) name:@"EDQueueDidStart" object:nil];
     [nc addObserver:self selector:@selector(receivedNotification:) name:@"EDQueueDidStop" object:nil];
     [nc addObserver:self selector:@selector(receivedNotification:) name:@"EDQueueDidDrain" object:nil];
+    [nc addObserver:self selector:@selector(receivedNotification:) name:@"EDQueueDidBecomeStale" object:nil];
+    [nc addObserver:self selector:@selector(receivedNotification:) name:@"EDQueueDidBecomeFresh" object:nil];
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
@@ -48,11 +50,33 @@
 {
     [[EDQueue sharedInstance] enqueueWithData:nil forTask:@"critical"];
 }
+
+- (IBAction)resetQueue:(id)sender {
+    [[EDQueue sharedInstance] empty];
+}
      
 #pragma mark - Notifications
      
 - (void)receivedNotification:(NSNotification *)notification
 {
+    if ([EDQueue sharedInstance].isRunning) {
+        self.runningLabel.textColor = [UIColor greenColor];
+    } else {
+        self.runningLabel.textColor = [UIColor blackColor];
+    }
+    
+    if ([EDQueue sharedInstance].isActive) {
+        self.activeLabel.textColor = [UIColor greenColor];
+    } else {
+        self.activeLabel.textColor = [UIColor blackColor];
+    }
+    
+    if ([EDQueue sharedInstance].isStale) {
+        self.staleLabel.textColor = [UIColor greenColor];
+    } else {
+        self.staleLabel.textColor = [UIColor blackColor];
+    }
+    
     self.activity.text = [NSString stringWithFormat:@"%@%@\n", self.activity.text, notification];
     [self.activity scrollRangeToVisible:NSMakeRange([self.activity.text length], 0)];
 }

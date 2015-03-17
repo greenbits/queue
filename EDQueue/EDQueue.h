@@ -21,6 +21,8 @@ extern NSString *const EDQueueDidStop;
 extern NSString *const EDQueueJobDidSucceed;
 extern NSString *const EDQueueJobDidFail;
 extern NSString *const EDQueueDidDrain;
+extern NSString *const EDQueueDidBecomeStale;
+extern NSString *const EDQueueDidBecomeFresh;
 
 @protocol EDQueueDelegate;
 @interface EDQueue : NSObject
@@ -29,9 +31,12 @@ extern NSString *const EDQueueDidDrain;
 
 @property (nonatomic, weak) id<EDQueueDelegate> delegate;
 
+@property (nonatomic) BOOL isReliable;
 @property (nonatomic, readonly) BOOL isRunning;
 @property (nonatomic, readonly) BOOL isActive;
+@property (nonatomic, readonly) BOOL isStale;
 @property (nonatomic) NSUInteger retryLimit;
+@property (nonatomic) NSUInteger staleThreshold;
 
 - (void)enqueueWithData:(id)data forTask:(NSString *)task;
 - (void)start;
