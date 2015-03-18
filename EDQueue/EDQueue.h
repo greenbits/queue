@@ -46,6 +46,7 @@ extern NSString *const EDQueueDidBecomeFresh;
 - (BOOL)jobExistsForTask:(NSString *)task;
 - (BOOL)jobIsActiveForTask:(NSString *)task;
 - (NSDictionary *)nextJobForTask:(NSString *)task;
+- (NSUInteger)fetchJobCount;
 
 @end
 
