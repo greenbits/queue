@@ -23,6 +23,7 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
     BOOL _isRunning;
     BOOL _isActive;
     BOOL _isStale;
+    BOOL _lastIsStale;
     NSUInteger _retryLimit;
     NSUInteger _staleThreshold;
 }
@@ -248,13 +249,14 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
             break;
     }
     
-    if (!_isStale) {
+    if (_isStale && !_lastIsStale) {
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeStale, @"name", job, @"data", nil] waitUntilDone:false];
-    } else {
+    } else if (!_isStale && _lastIsStale) {
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeFresh, @"name", job, @"data", nil] waitUntilDone:false];
     }
     
     // Clean-up
+    _lastIsStale = _isStale;
     _isActive = NO;
     
     // Drain
