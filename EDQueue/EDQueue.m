@@ -182,6 +182,9 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
 - (void)empty
 {
     [self.engine removeAllJobs];
+    _isStale = NO;
+    [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeFresh, @"name", nil, @"data", nil] waitUntilDone:false];
+    [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidDrain, @"name", nil, @"data", nil] waitUntilDone:false];
 }
 
 
@@ -201,10 +204,6 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
             _isActive = YES;
             id job = [self.engine fetchJob];
             self.activeTask = [(NSDictionary *)job objectForKey:@"task"];
-            
-            long jobTimestamp = [[(NSDictionary *)job objectForKey:@"stamp"] longLongValue];
-            long currentTimestamp = [[NSDate date] timeIntervalSince1970];
-            _isStale = (currentTimestamp - jobTimestamp) > _staleThreshold;
             
             // Pass job to delegate
             if ([self.delegate respondsToSelector:@selector(queue:processJob:completion:)]) {
@@ -248,6 +247,10 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
             }
             break;
     }
+    
+    long jobTimestamp = [[(NSDictionary *)job objectForKey:@"stamp"] longLongValue];
+    long currentTimestamp = [[NSDate date] timeIntervalSince1970];
+    _isStale = result != EDQueueResultSuccess && (currentTimestamp - jobTimestamp) > _staleThreshold;
     
     if (_isStale && !_lastIsStale) {
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeStale, @"name", job, @"data", nil] waitUntilDone:false];
