@@ -131,6 +131,27 @@
 }
 
 /**
+ * Dumps all pending jobs from the datastore
+ *
+ * @return {NSArray}
+ *
+ */
+- (NSArray *)dumpAllJobs {
+    __block NSMutableArray *jobData = [NSMutableArray array];
+    
+    [self.queue inDatabase:^(FMDatabase *db) {
+        FMResultSet *rs = [db executeQuery:@"SELECT * FROM queue"];
+        [self _databaseHadError:[db hadError] fromDatabase:db];
+        
+        while ([rs next]) {
+            [jobData addObject:[self _jobFromResultSet:rs]];
+        }
+    }];
+    
+    return jobData;
+}
+
+/**
  * Returns the total number of jobs within the datastore.
  *
  * @return {uint}

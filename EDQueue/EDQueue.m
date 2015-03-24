@@ -143,6 +143,16 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
 }
 
 /**
+ * Returns the count of jobs.
+ *
+ * @return {NSArray}
+ */
+- (NSArray *)dumpAllJobs
+{
+    return [_engine dumpAllJobs];
+}
+
+/**
  * Starts the queue.
  *
  * @return {void}
