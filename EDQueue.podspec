@@ -5,7 +5,7 @@ Pod::Spec.new do |s|
   s.summary      = 'A persistent background job queue for iOS.'
   s.homepage     = 'https://github.com/greenbits/queue'
   s.authors      = {'Andrew Sliwinski' => 'andrewsliwinski@acm.org', 'Francois Lambert' => 'flambert@mirego.com'}
-  s.source       = { :git => 'https://github.com/greenbits/queue.git', :tag => 'v0.8.0' }
+  s.source       = { :git => 'https://github.com/greenbits/queue.git', :tag => s.version  }
   s.platform     = :ios, '5.0'
   s.source_files = 'EDQueue'
   s.library      = 'sqlite3.0'
