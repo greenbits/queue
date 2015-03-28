@@ -258,7 +258,7 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
             break;
     }
     
-    long jobTimestamp = [[(NSDictionary *)job objectForKey:@"stamp"] longValue];
+    long jobTimestamp = (long)[[(NSDictionary *)job objectForKey:@"stamp"] longLongValue];
     long currentTimestamp = [[NSDate date] timeIntervalSince1970];
     _isStale = result != EDQueueResultSuccess && (currentTimestamp - jobTimestamp) > _staleThreshold;
     
