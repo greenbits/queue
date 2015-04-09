@@ -42,6 +42,7 @@ extern NSString *const EDQueueDidBecomeFresh;
 - (void)start;
 - (void)stop;
 - (void)empty;
+- (void)skipJob;
 
 - (BOOL)jobExistsForTask:(NSString *)task;
 - (BOOL)jobIsActiveForTask:(NSString *)task;
