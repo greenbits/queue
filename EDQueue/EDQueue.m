@@ -181,6 +181,15 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
     }
 }
 
+/**
+ * Skips the next job on the queue.
+ *
+ * @return {void}
+ */
+- (void)skipJob {
+    id job = [self.engine fetchJob];
+    [self.engine removeJob:[job objectForKey:@"id"]];
+}
 
 
 /**
