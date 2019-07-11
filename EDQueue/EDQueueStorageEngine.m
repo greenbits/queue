@@ -56,7 +56,7 @@
 {
     NSString *dataString = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:data options:NSJSONWritingPrettyPrinted error:nil] encoding:NSUTF8StringEncoding];
 
-    __block BOOL dbError = false;
+    __block BOOL dbError = NO;
     __block int lastErrorCode = 0;
     __block NSString *lastErrorMessage = @"";
     [self.queue inDatabase:^(FMDatabase *db) {
