@@ -10,5 +10,16 @@ Pod::Spec.new do |s|
   s.source_files = 'EDQueue'
   s.library      = 'sqlite3.0'
   s.requires_arc = true
+  s.prefix_header_contents = <<-OBJC
+#ifndef ddLogLevel
+#import <CocoaLumberjack/CocoaLumberjack.h>
+#ifdef DEBUG
+static const int ddLogLevel = DDLogLevelVerbose;
+#else
+static const int ddLogLevel = DDLogLevelInfo;
+#endif
+#endif
+OBJC
+  s.dependency 'CocoaLumberjack'
   s.dependency 'FMDB', '~> 2.0'
 end
