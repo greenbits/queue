@@ -71,7 +71,7 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
 }
 
 - (void)dealloc
-{    
+{
     self.delegate = nil;
     _engine = nil;
 }
@@ -134,7 +134,7 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
 }
 
 /**
- * Returns the list of jobs for this 
+ * Returns the list of jobs for this
  *
  * @param {NSString} Task label
  *
@@ -173,6 +173,8 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
  */
 - (void)start
 {
+    DDLogInfo(@"EDQueue start");
+
     if (!self.isRunning) {
         _isRunning = YES;
         _isStale = NO;
@@ -189,6 +191,8 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
  */
 - (void)stop
 {
+    DDLogInfo(@"EDQueue stop");
+
     if (self.isRunning) {
         _isRunning = NO;
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidStop, @"name", nil, @"data", nil] waitUntilDone:false];
@@ -237,7 +241,13 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
             _isActive = YES;
             id job = [self.engine fetchJob];
             self.activeTask = [(NSDictionary *)job objectForKey:@"task"];
-            
+
+            DDLogInfo(@"EDQueue delegate: %p", self.delegate);
+
+            if (!self.delegate) {
+                DDLogWarn(@"EDQueue delegate nil");
+            }
+
             // Pass job to delegate
             if ([self.delegate respondsToSelector:@selector(queue:processJob:completion:)]) {
                 [self.delegate queue:self processJob:job completion:^(EDQueueResult result) {
@@ -255,6 +265,8 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
 
 - (void)processJob:(NSDictionary*)job withResult:(EDQueueResult)result
 {
+    DDLogInfo(@"processJob result: %d", result);
+
     // Check result
     switch (result) {
         case EDQueueResultSuccess:
@@ -280,21 +292,21 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
             }
             break;
     }
-    
+
     long jobTimestamp = (long)[[(NSDictionary *)job objectForKey:@"stamp"] longLongValue];
     long currentTimestamp = [[NSDate date] timeIntervalSince1970];
     _isStale = result != EDQueueResultSuccess && (currentTimestamp - jobTimestamp) > _staleThreshold;
-    
+
     if (_isStale && !_lastIsStale) {
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeStale, @"name", job, @"data", nil] waitUntilDone:false];
     } else if (!_isStale && _lastIsStale) {
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidBecomeFresh, @"name", job, @"data", nil] waitUntilDone:false];
     }
-    
+
     // Clean-up
     _lastIsStale = _isStale;
     _isActive = NO;
-    
+
     // Drain
     if ([self.engine fetchJobCount] == 0) {
         [self performSelectorOnMainThread:@selector(postNotification:) withObject:[NSDictionary dictionaryWithObjectsAndKeys:EDQueueDidDrain, @"name", nil, @"data", nil] waitUntilDone:false];
