@@ -38,6 +38,7 @@ extern NSString *const EDQueueDidBecomeFresh;
 @property (nonatomic) NSUInteger retryLimit;
 @property (nonatomic) NSUInteger staleThreshold;
 
+- (void)enqueueWithData:(id)data forTask:(NSString *)task error:(NSError * __autoreleasing *)outError;
 - (void)enqueueWithData:(id)data forTask:(NSString *)task;
 - (void)start;
 - (void)stop;

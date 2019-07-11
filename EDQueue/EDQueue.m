@@ -88,8 +88,22 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
  */
 - (void)enqueueWithData:(id)data forTask:(NSString *)task
 {
+    [self enqueueWithData:data forTask:task error:nil];
+}
+
+/**
+ * Adds a new job to the queue.
+ *
+ * @param {id} Data
+ * @param {NSString} Task label
+ * @param {NSError * __autoreleasing *} Address of Error Pointer
+ *
+ * @return {void}
+ */
+- (void)enqueueWithData:(id)data forTask:(NSString *)task error:(NSError * __autoreleasing *)outError
+{
     if (data == nil) data = @{};
-    [self.engine createJob:data forTask:task];
+    [self.engine createJob:data forTask:task error:outError];
     [self tick];
 }
 

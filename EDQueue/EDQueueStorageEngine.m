@@ -52,14 +52,32 @@
  *
  * @return {void}
  */
-- (void)createJob:(id)data forTask:(id)task
+- (void)createJob:(id)data forTask:(id)task error:(NSError * __autoreleasing *)outError
 {
     NSString *dataString = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:data options:NSJSONWritingPrettyPrinted error:nil] encoding:NSUTF8StringEncoding];
-    
+
+    __block BOOL dbError = false;
+    __block int lastErrorCode = 0;
+    __block NSString *lastErrorMessage = @"";
     [self.queue inDatabase:^(FMDatabase *db) {
         [db executeUpdate:@"INSERT INTO queue (task, data) VALUES (?, ?)", task, dataString];
-        [self _databaseHadError:[db hadError] fromDatabase:db];
+
+        dbError = [db hadError];
+        if (dbError) {
+            lastErrorCode = [db lastErrorCode];
+            lastErrorMessage = [db lastErrorMessage];
+        }
+
+        [self _databaseHadError:dbError fromDatabase:db];
     }];
+
+    if (dbError && outError) {
+        *outError = [NSError errorWithDomain:@"EDQueueErrorDomain"
+                                        code:lastErrorCode
+                                    userInfo:@{
+                                               NSLocalizedDescriptionKey: lastErrorMessage
+                                               }];
+    }
 }
 
 /**
