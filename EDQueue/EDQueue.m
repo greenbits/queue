@@ -234,7 +234,10 @@ NSString *const EDQueueDidBecomeFresh = @"EDQueueDidBecomeFresh";
  */
 - (void)tick
 {
-    dispatch_queue_t gcd = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+    // FOH-497: Ensure everything runs on the main serial queue so there is no potential for race
+    // conditions. Also ensures that all DB access, which is using FMBDB's queue for thread safety,
+    // still happens in sequence.
+    dispatch_queue_t gcd = dispatch_get_main_queue();
     dispatch_async(gcd, ^{
         if (self.isRunning && !self.isActive && [self.engine fetchJobCount] > 0) {
             // Start job
