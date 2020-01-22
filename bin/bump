@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# coding: utf-8
+
+set -e
+
+POD_NAME='EDQueue'
+POD_SPEC="$POD_NAME.podspec"
+VERSION="$1"
+
+if [ -z "$VERSION" ]; then
+  echo "Error: Missing version argument"
+  exit 1
+fi
+
+# Update podspec file
+sed -i .old "s/\(s.version[[:space:]]*\)=.*/\1= '$VERSION'/" $POD_SPEC
+rm $POD_SPEC.old
+
+# Commit changes and tag
+git add $POD_SPEC
+git commit -m "Bump version to '$VERSION'"
+
+# Uncomment this for protected branches
+# git checkout -b version-bump
+# git push -u origin version-bump
+#
+# echo "Waiting for build to complete..."
+# while [ "$(curl -H 'Authorization: token 3d7dae19b36159d100437336c7727b085225e773' --silent https://api.github.com/repos/greenbits/permafrost-ios/commits/$(git rev-parse HEAD)/status | grep '"state"' | head -1 | awk '{print $2}' | tr -d '",')" != "success" ]; do
+#   sleep 5
+# done
+#
+# git checkout master
+
+git push
+git tag $VERSION
+git push --tags
+
+# git push origin :version-bump
+# git branch -D version-bump
+
+# TODO: clean up tag if validation fails
+# Update private pod repo
+bundle exec pod repo push greenbits $POD_SPEC --verbose --use-libraries --allow-warnings
